@@ -1,0 +1,196 @@
+# LoRA Fine-Tuning API
+
+This FastAPI application provides an endpoint for fine-tuning LoRA models using Replicate. It processes uploaded images and initiates training for custom LoRA models.
+
+## Features
+
+- Image processing (cropping and resizing)
+- Automatic LoRA model training on Replicate
+- Asynchronous file handling
+- Automatic cleanup of temporary files
+- Environment-based configuration
+
+## Prerequisites
+
+- Python 3.8+
+- Replicate API token
+- Hugging Face token
+- Sufficient disk space for temporary image processing
+
+## Installation
+
+1. Clone the repository: 
+
+I'll create a comprehensive README.md that explains the API setup, usage, and functionality.
+
+```markdown:README.md
+# LoRA Fine-Tuning API
+
+This FastAPI application provides an endpoint for fine-tuning LoRA models using Replicate. It processes uploaded images and initiates training for custom LoRA models.
+
+## Features
+
+- Image processing (cropping and resizing)
+- Automatic LoRA model training on Replicate
+- Asynchronous file handling
+- Automatic cleanup of temporary files
+- Environment-based configuration
+
+## Prerequisites
+
+- Python 3.8+
+- Replicate API token
+- Hugging Face token
+- Sufficient disk space for temporary image processing
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd <repository-name>
+```
+
+2. Create a virtual environment and activate it:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Create a `.env` file in the project root with your credentials:
+```env
+REPLICATE_API_TOKEN=your_replicate_token
+HUGGINGFACE_TOKEN=your_huggingface_token
+BASE_MODEL_PATH=SamuelPfisterer1/hitch/user-lora
+```
+
+## Running the API
+
+Start the server with:
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at `http://localhost:8000`.
+
+## API Documentation
+
+### Endpoint: POST /train-lora/
+
+Initiates LoRA model training with provided images.
+
+#### Request
+
+- Method: `POST`
+- Content-Type: `multipart/form-data`
+- Parameters:
+  - `files`: List of image files (required)
+  - `user_id`: String identifier for the user (required)
+  - `webhook_url`: URL for training status notifications (optional)
+
+Example using curl:
+```bash
+curl -X POST "http://localhost:8000/train-lora/" \
+  -H "Content-Type: multipart/form-data" \
+  -F "files=@image1.jpg" \
+  -F "files=@image2.jpg" \
+  -F "user_id=test_user" \
+  -F "webhook_url=https://your-webhook-url.com/callback"
+```
+
+Example using Python requests:
+```python
+import requests
+
+files = [
+    ('files', ('image1.jpg', open('image1.jpg', 'rb'))),
+    ('files', ('image2.jpg', open('image2.jpg', 'rb')))
+]
+
+response = requests.post(
+    'http://localhost:8000/train-lora/',
+    files=files,
+    data={
+        'user_id': 'test_user',
+        'webhook_url': 'https://your-webhook-url.com/callback'
+    }
+)
+```
+
+#### Response
+
+```json
+{
+    "training_id": "string",
+    "status": "string",
+    "huggingface_path": "string",
+    "replicate_model": "string"
+}
+```
+
+### Webhook Notifications
+
+When a webhook URL is provided, the API will send notifications for the following events:
+- `start`: When the training begins
+- `completed`: When the training is finished
+
+The webhook payload will contain training status information from Replicate.
+
+## How It Works
+
+1. **Image Upload**: The API accepts multiple image files through a POST request.
+
+2. **Image Processing**:
+   - Images are saved to a temporary directory
+   - Each image is cropped to a square aspect ratio
+   - Images are resized to a standard size (1024x1024)
+   - Processed images are saved to a separate temporary directory
+
+3. **ZIP Creation**: Processed images are compressed into a ZIP file for training
+
+4. **Model Creation**: A new model is created on Replicate with the user's ID
+
+5. **Training Initiation**: The ZIP file is uploaded to Replicate and training begins
+
+6. **Cleanup**: All temporary files are automatically removed after the request completes
+
+## Error Handling
+
+The API includes error handling for:
+- Missing or invalid files
+- Image processing failures
+- Training initialization failures
+- File system operations
+
+## Development
+
+The project structure is organized as follows:
+```
+.
+├── app/
+│   ├── __init__.py
+│   ├── main.py           # FastAPI application and routes
+│   ├── config.py         # Configuration management
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── image_processor.py  # Image processing logic
+│   │   └─��� lora_trainer.py     # LoRA training logic
+│   └── schemas/
+│       ├── __init__.py
+│       └── requests.py    # Pydantic models
+├── requirements.txt
+└── README.md
+```
+
+## Deployment
+
+This API can be deployed on any platform that supports Python web applications. For production deployment:
+
+1. Set environment variables instead of using `.env`
+2. Use a production ASGI server like Gunicorn with Uvicorn workers
+3. Configure appropriate security measures (API keys, rate limiting, etc.)
