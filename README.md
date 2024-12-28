@@ -138,11 +138,58 @@ files=files
 
 ### Webhook Notifications
 
-When a webhook URL is provided, the API will send notifications for the following events:
-- `start`: When the training begins
-- `completed`: When the training is finished
+When a webhook URL is provided, the API will send POST requests with JSON payloads for the following events:
+- Training start: `status: "starting"`
+- Training completion: `status: "successful"`
 
-The webhook payload will contain training status information from Replicate.
+Example webhook payload:
+```json
+{
+    "training_id": "gpbxnb8z6drma0cm1tmardb0mr",
+    "status": "starting",
+    "huggingface_path": "SamuelPfisterer1/hitch/user-lora/webhook_test_user",
+    "replicate_model": "samuelpfisterer/hitch-lora-webhook_test_user"
+}
+```
+
+#### Webhook Implementation Tips
+
+1. **User ID Extraction**: You can extract the user_id from the `replicate_model` field:
+   - Format: `samuelpfisterer/hitch-lora-{user_id}`
+   - Example: For model `samuelpfisterer/hitch-lora-webhook_test_user`, the user_id is `webhook_test_user`
+
+2. **Recommended Webhook URL Pattern**:
+   Instead of using a single webhook URL, consider using path parameters to handle different users:
+   ```
+   https://your-domain.com/webhooks/{user_id}/lora-training
+   ```
+   This way, you can automatically route notifications to the correct user handler.
+
+Example webhook handler in Python:
+```python
+from fastapi import FastAPI, HTTPException
+
+app = FastAPI()
+
+@app.post("/webhooks/{user_id}/lora-training")
+async def handle_training_webhook(user_id: str, payload: dict):
+    # Extract status
+    status = payload.get("status")
+    
+    # Verify user_id matches the one in replicate_model
+    model_name = payload.get("replicate_model", "")
+    expected_suffix = f"hitch-lora-{user_id}"
+    if not model_name.endswith(expected_suffix):
+        raise HTTPException(status_code=400, detail="User ID mismatch")
+    
+    if status == "starting":
+        # Handle training start
+        pass
+    elif status == "successful":
+        # Handle training completion
+        pass
+    
+    return {"status": "processed"}
 
 ## How It Works
 
