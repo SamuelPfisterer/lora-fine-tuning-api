@@ -165,6 +165,11 @@ Example webhook payload:
    ```
    This way, you can automatically route notifications to the correct user handler.
 
+3. **Response Requirements**:
+   - Your webhook endpoint must respond with a 2xx status code within a few seconds
+   - If the endpoint doesn't respond in time or returns a non-2xx status, the webhook might be retried
+   - Process webhooks asynchronously if handling takes longer than a few seconds
+
 Example webhook handler in Python:
 ```python
 from fastapi import FastAPI, HTTPException
@@ -189,7 +194,8 @@ async def handle_training_webhook(user_id: str, payload: dict):
         # Handle training completion
         pass
     
-    return {"status": "processed"}
+    # Return quickly with 200 status
+    return {"status": "accepted"}
 
 ## How It Works
 
