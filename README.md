@@ -88,37 +88,40 @@ Initiates LoRA model training with provided images.
 
 - Method: `POST`
 - Content-Type: `multipart/form-data`
-- Parameters:
-  - `files`: List of image files (required)
+- Query Parameters:
   - `user_id`: String identifier for the user (required)
+    - Length: 1-50 characters
+    - Pattern: Must match `^[a-z0-9_-]+[a-z0-9_]$`
+    - Description: ID of the user that is also used to generate photos of the user
   - `webhook_url`: URL for training status notifications (optional)
+    - Example: `https://example.com/webhook`
+    - Description: URL for Webhook notifications, e.g., when the training finishes
+- Request Body (multipart/form-data):
+  - `files`: List of image files (required)
+
 
 Example using curl:
 ```bash
-curl -X POST "http://localhost:8000/train-lora/" \
-  -H "Content-Type: multipart/form-data" \
-  -F "files=@image1.jpg" \
-  -F "files=@image2.jpg" \
-  -F "user_id=test_user" \
-  -F "webhook_url=https://your-webhook-url.com/callback"
+curl -X POST "http://localhost:8000/train-lora/?user_id=test-user_123&webhook_url=https://example.com/webhook"
+-H "Content-Type: multipart/form-data"
+-F "files=@image1.jpg"
+-F "files=@image2.jpg"
 ```
 
 Example using Python requests:
 ```python
 import requests
-
 files = [
-    ('files', ('image1.jpg', open('image1.jpg', 'rb'))),
-    ('files', ('image2.jpg', open('image2.jpg', 'rb')))
+('files', ('image1.jpg', open('image1.jpg', 'rb'))),
+('files', ('image2.jpg', open('image2.jpg', 'rb')))
 ]
-
 response = requests.post(
-    'http://localhost:8000/train-lora/',
-    files=files,
-    data={
-        'user_id': 'test_user',
-        'webhook_url': 'https://your-webhook-url.com/callback'
-    }
+'https://lora-fine-tuning-api.onrender.com/train-lora/',
+params={
+  'user_id': 'test-user_123', # Must match pattern: ^[a-z0-9_-]+[a-z0-9_]$
+  'webhook_url': 'https://example.com/webhook'
+},
+files=files
 )
 ```
 
@@ -179,7 +182,7 @@ The project structure is organized as follows:
 │   ├── services/
 │   │   ├── __init__.py
 │   │   ├── image_processor.py  # Image processing logic
-│   │   └─��� lora_trainer.py     # LoRA training logic
+│   │   └── lora_trainer.py     # LoRA training logic
 │   └── schemas/
 │       ├── __init__.py
 │       └── requests.py    # Pydantic models

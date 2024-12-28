@@ -1,7 +1,7 @@
 import os
 import shutil
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from typing import List
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException
+from typing import List, Optional, Annotated
 import uuid
 import logging
 from app.config import settings
@@ -20,9 +20,17 @@ app = FastAPI()
 
 @app.post("/train-lora/", response_model=LoraTrainingResponse)
 async def train_lora(
-    files: List[UploadFile] = File(...),
-    user_id: str = None,
-    webhook_url: str = None
+    files: Annotated[List[UploadFile], File()],
+    user_id: Annotated[str, Query(
+    description="ID of the user that is also used to generate photos of the user",
+    min_length=1,
+    max_length=50,
+    pattern="^[a-z0-9_-]+[a-z0-9_]$"
+    )],
+    webhook_url: Annotated[Optional[str], Query(
+        description="URL for Webhook notifications, e.g., when the training finishes",
+        example="https://example.com/webhook"
+    )] = None
 ):
     # Log incoming request details
     logger.info(f"Received training request - User ID: {user_id}")
